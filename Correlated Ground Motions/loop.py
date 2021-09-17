@@ -18,7 +18,6 @@ from openquake.hazardlib.imt import from_string
 import time
 from matplotlib import cm
 from neicio.gmt import GMTGrid
-from write_xml import write_grid_xml
 
 
 def main(var, r, voi, rand, cor_model, vs_corr):
