@@ -1,6 +1,13 @@
 """
 Process a ShakeMap, based on the configuration and data found in
 shake_data.hdf, and produce output in shake_result.hdf.
+
+Alternate version of the model.py ShakeMap coremod which has the alternate conditioning method 
+proposed in Engler et al. (2021) "Partitioning Ground Motion Uncertainties When Conditioned on Station Data"
+
+This file is to replace the model.py in the shakemap source folder, located in shakemap-directory/shakemap/coremods/
+Currently this outputs the total standard deviation, if the within or between-event conditional standard deviations are desired 
+then comment out line 1517 (total) and uncomment line 1520 for the within, or uncomment line 1523 for the between.
 """
 import os
 import argparse
@@ -1514,13 +1521,13 @@ class ModelModule(CoreModule):
             mix3_lhs = np.sqrt(out_bias_var[iy,:][:,np.newaxis])*np.sqrt(in_bias_var.T)
 
             #Total uncertainty
-            #sdgrid[iy,:] = np.sqrt(pout_sd2[iy,:] - np.diag(rcmatrix.dot(matrix12.T)) + tout_sd2[iy,:]/(1.0 + bias_den) +np.diag(rcmatrix.dot(mix1_rhs))-np.diag(rcmatrix.dot(mix2_rhs))-np.diag(mix3_lhs.dot(rcmatrix.T)))
+            sdgrid[iy,:] = np.sqrt(pout_sd2[iy,:] - np.diag(rcmatrix.dot(matrix12.T)) + tout_sd2[iy,:]/(1.0 + bias_den) +np.diag(rcmatrix.dot(mix1_rhs))-np.diag(rcmatrix.dot(mix2_rhs))-np.diag(mix3_lhs.dot(rcmatrix.T)))
             
             #Within uncertainty
             #sdgrid[iy,:] = np.sqrt(pout_sd2[iy,:] - np.diag(rcmatrix.dot(matrix12.T)))
             
             #Between uncertainty
-            sdgrid[iy,:] = np.sqrt( tout_sd2[iy,:]/(1.0 + bias_den) +np.diag(rcmatrix.dot(mix1_rhs))-np.diag(rcmatrix.dot(mix2_rhs))-np.diag(mix3_lhs.dot(rcmatrix.T)))
+            #sdgrid[iy,:] = np.sqrt( tout_sd2[iy,:]/(1.0 + bias_den) +np.diag(rcmatrix.dot(mix1_rhs))-np.diag(rcmatrix.dot(mix2_rhs))-np.diag(mix3_lhs.dot(rcmatrix.T)))
 
             mtime += time.time() - time4
 
@@ -1529,7 +1536,7 @@ class ModelModule(CoreModule):
         # the 1 to 10 bounds of MMI, so we apply that constraint again
         # here
         #
-        ampgrid = pout_mean
+        #ampgrid = pout_mean
         if imtstr == 'MMI':
             ampgrid = np.clip(ampgrid, 1.0, 10.0)
         self.outgrid[imtstr] = ampgrid
