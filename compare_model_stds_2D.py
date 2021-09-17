@@ -3,11 +3,11 @@
 """
 Created on Tue May 19 10:54:28 2020
 
-@author: emthompson
+@author: emthompson, dengler
 """
 
 """
-Compare two shakemaps.
+Compare two shakemap uncertainty grids.
 """
 
 import argparse
@@ -28,10 +28,9 @@ SIZE = (5, 4)
 
 def get_parser():
     desc = '''Compare two shakemaps.
-This program is to quickly make maps comparing two different shakemaps. Since
-the main goal is to compare across maps using ShakeMap 3.5 and ShakeMap 4.0
-the arguments are paths to grid.xml files.
-Note that ratios are grid1/grid2 and differences are grid1 - grid2.
+This program is to quickly make maps comparing two different shakemap uncertainty grids. 
+The arguments are paths to grid.xml files.
+Note that differences are grid1 - grid2.
 '''
     parser = argparse.ArgumentParser(description=desc, epilog='\n\n')
     parser.add_argument('grid1', type=str,
@@ -45,8 +44,6 @@ Note that ratios are grid1/grid2 and differences are grid1 - grid2.
                     help='Label of quantity being plotted')
     parser.add_argument('-l2', '--label2', type=str, default='Grid 2',
                 help='Label of quantity being plotted')
-    parser.add_argument('-r','--range', type=str, default='[.9, 1.1]',
-                        help='Range for Colorbar')
     parser.add_argument('-d','--data',type=str,default='None',
                         help='Folder with station location if desired')
     parser.add_argument('-o', '--output', type=str, default='compare.png',
@@ -158,29 +155,12 @@ def main(pparser, args):
     
     a1 = c1.getData()
     a2 = c2.getData()
-    # a1[a1<1E-5]=.1
-    # a2[a2<1E-5]=.1
     ratio = (a1-a2)
-    # print(np.min(ratio))
-    # print(np.max(ratio))
    
     fig = plt.figure(figsize=SIZE)
     wid = 1.0
     height = 0.8
 
-    # Ratio plot
-    color_range = eval(args.range)
-    levels = list(np.linspace(color_range[0], color_range[1], 12))
-    #levels = list(np.linspace(np.log10(.92), np.log10(1.08),12))
-    #cmap = plt.cm.Spectral_r
-    cmap = 'bwr'
-    x1 = 0.05
-    y1 = 0.2
-    
-    vmin = -0.050
-    vmax =  0.050
-    vmin = .975
-    vmax = 1.025
     vmin = -.01
     vmax = .01
 
@@ -189,16 +169,9 @@ def main(pparser, args):
     proj = ccrs.PlateCarree()
     ax1 = plt.axes([x1, y1, wid, height], projection=proj)
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-#    cs1 = ax1.contourf(lons, lats, np.flipud(ratio), levels,
-#                       cmap=cmap, extend='both')
-    # cs1 = ax1.contourf(lons, lats, np.flipud(ratio), levels,
-    #                    cmap=cmap, extend='both')
     cs1 = ax1.imshow(np.flipud(ratio),extent=extent,vmin=vmin,vmax=vmax,
                       cmap=cmap)
     gl = ax1.gridlines(crs=proj, draw_labels=True, linestyle='-')
-
-    #gl.xformatter = LongitudeFormatter()
-    #gl.yformatter = LatitudeFormatter()
     gl.xlabel_style = {'size': 8, 'color': 'black'}
     gl.ylabel_style = {'size': 8, 'color': 'black'}
     gl.top_labels = False
@@ -259,74 +232,22 @@ def main(pparser, args):
             instlon = inst_dict['lon']
             ax1.plot(instlon, instlat, 'k^', fillstyle='none', mew=0.5,
                     markersize=6, zorder=STATIONS_ZORDER, transform=proj,label ='Seismic Instrument')
-    
-            # mmi_file = open(args.data+'/mmi_sta_locs.txt','r')
-            # sta_file = open(args.data+'/inst_sta_locs.txt','r')
-            # read_mmi_flag = 1
-            # mmi_lat = []
-            # mmi_lon = []
-            # while read_mmi_flag == 1:
-            #     line = mmi_file.readline()
-            #     if line != '':
-            #         line = eval('['+line.replace('\n','')+']')
-            #         mmi_lat.append(line[0])
-            #         mmi_lon.append(line[1])
-            #     else:
-            #         read_mmi_flag = 0
-            # read_sta_flag = 1        
-            # sta_lat = []
-            # sta_lon = []
-            # while read_sta_flag == 1:
-            #     line = sta_file.readline()
-            #     if line != '':
-            #         line = eval('['+line.replace('\n','')+']')
-            #         sta_lat.append(line[0])
-            #         sta_lon.append(line[1])
-            #     else:
-            #         read_sta_flag = 0
-        # plt.plot(mmi_lon,mmi_lat,'ok',markersize=2,mew=.5,markerfacecolor = 'w',markeredgecolor='k',label='Reported Intensity')
-        # plt.plot(sta_lon,sta_lat,'^k',markersize=3,mew=.5,markerfacecolor = 'w',markeredgecolor='k',label='Seismic Instrument')
-        # plt.xlim([np.min(lons),np.max(lons)])
-        # plt.ylim([np.min(lats),np.max(lats)])
+
         plt.legend(loc ='upper right')
         
     
     if not args.nocoasts:
         ax1.add_feature(cfeature.COASTLINE.with_scale('50m'))
         ax1.add_feature(cfeature.BORDERS.with_scale('50m'), linestyle='-')
-        #ax1.add_feature(cfeature.OCEAN.with_scale('50m'),facecolor=WATER_COLOR,zorder=11)
-    #plt.title(label1 +' /\n '+label2 ,pad = 20)
     plt.title('        Difference in Proposed and W2018 Conditional Std of log PGA',pad=20,fontsize=14)
-    # ax_cbar1 = plt.axes([0, y1-0.1, 1.1, 0.05])
-    # cbar1 = fig.colorbar(cs1, cax=ax_cbar1,
-    #                      orientation='horizontal',
-    #                      ticks=levels)
     
     ax_cbar1 = plt.axes([1.0, .2, 0.05, 0.8])
-    #if args.stat == 'mean':
     cbar_vals = [-.01,-0.005,0,.005,.01]
     cbar_label = ['-.01','-.005','0.0','.005','.01']
-    # else:
-    #     cbar_vals = [-5,-4,-3,-2]
-    #     cbar_label = [r'$10^{-5}$',r'$10^{-4}$',r'$10^{-3}$','0.01']
-    
     cbar1 = fig.colorbar(cs1, cax=ax_cbar1,ticks=cbar_vals,
                         orientation='vertical')
-    # cbar1 = fig.colorbar(cs1, cax=ax_cbar1,
-    #                     orientation='vertical')
-    # cbar_label = []
-    # for i in range(len(levels)):
-    #     cbar_label.append(f'{levels[i]:.3f}')
-    # #print(cbar_label)    
-    # cbar1.ax.set_xticklabels(cbar_label)
     cbar1.ax.set_yticklabels(cbar_label)
     cbar1.ax.set_ylabel('Difference (Proposed-W2018)',fontsize=12)
-    # for t in cbar1.ax.get_xticklabels():
-    #     t.set_fontsize(6)
-#    cbar1.ax.set_xlabel('Point-Source MMI Uncertainty/\n Atlas MMI Uncertainty')
-#    cbar1.ax.set_xlabel('Atlas  MMI /\n ShakeMap 3.5 MMI')
-    
-
     cbar1.ax.get_yaxis().labelpad = 15
 
     # Difference plot
@@ -336,29 +257,7 @@ def main(pparser, args):
     ax1.set_xlim(cutdict.xmin, cutdict.xmax)
     ax1.set_ylim(cutdict.ymin, cutdict.ymax)
 
-#    ax2 = plt.axes([x1, y1, wid, height], projection=ccrs.PlateCarree())
-#    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-#    cs2 = ax2.contourf(lons, lats, np.flipud(dif), levels,
-#                       cmap=cmap, extend='both')
-#    if not args.nocoasts:
-#        ax2.add_feature(cfeature.COASTLINE.with_scale('50m'))
-#        ax2.add_feature(cfeature.BORDERS.with_scale('50m'), linestyle='-')
-#        ax2.add_feature(cfeature.OCEAN.with_scale('50m'),facecolor=WATER_COLOR,zorder=11)
-#
-#    ax_cbar2 = plt.axes([x1, y1-0.1, wid, 0.05])
-#    cbar2 = fig.colorbar(cs2, cax=ax_cbar2,
-#                         orientation='horizontal',
-#                         ticks=levels)
-#    for t in cbar2.ax.get_xticklabels():
-#        t.set_fontsize(4)
-#    if args.imt == 'pgv':
-#        cbar2.ax.set_xlabel('%s Difference (cm/s)' % args.imt)
-#    elif args.imt == 'stdmmi':
-##        cbar2.ax.set_xlabel('Point-Source MMI Uncertainty -\n Atlas MMI Uncertainty')
-#        cbar2.ax.set_xlabel('Atlas (Original) MMI Uncertainty -\n Atlas (Fixed) MMI Uncertainty')
-#    else:
-#        cbar2.ax.set_xlabel('%s Difference (percent g)' % args.imt)
-#    cbar2.ax.get_yaxis().labelpad = 15
+
     plt.savefig(args.output, dpi=900, bbox_inches='tight')
 
 
@@ -366,9 +265,9 @@ if __name__ == '__main__':
     parser = get_parser()
     #pargs = parser.parse_args()
     
-    pargs = parser.parse_args(['/Users/dengler/shakemap_profiles/default/data/ci38457511/Current/uncertainty_alt.xml',
-                                '/Users/dengler/shakemap_profiles/default/data/ci38457511/Current/uncertainty_og.xml',
+    pargs = parser.parse_args(['/Input Data/uncertainty_alt.xml',
+                                '/Input Data/uncertainty_W2018.xml',
                                 '-i', 'stdpga', '-l1', 'Proposed Conditioning Model Std of log PGA' ,'-l2', 'W2018 Conditioning Model Std of log PGA',
-                                '-o','/Users/dengler/Documents/Codes/Loss with Uncertainty/compare_models_mean.png' ,'-r', '[.9,1.1]',
-                                '-d','/Users/dengler/shakemap_profiles/default/data/ci38457511/Current/stationlist.json'])
+                                '-o','/Input Data/compare_models_std.png',
+                                '-d','/Input Data/stationlist.json'])
     main(parser, pargs)
